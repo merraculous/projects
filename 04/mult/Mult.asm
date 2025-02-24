@@ -9,4 +9,31 @@
 // This program only needs to handle arguments that satisfy
 // R0 >= 0, R1 >= 0, and R0*R1 < 32768.
 
-// Put your code here.
+// Put your code here
+	//Initialize result register to 0
+	@2
+	M=0	//R2 = 0 
+	// Begin counter
+	@i //@16
+	M=0	// i = 0
+
+//Loop adding R1 value with itself R2 times
+(LOOP)
+	@i
+	D=M	//D=i or counter
+	@0
+	D=D-M	//D=i-R0
+	@END
+	D;JGE	//if i-R0 >= 0 goto END aka if D still positive
+
+	@1
+    D=M     // D=R1
+    @2
+    M=D+M   // Add together and update R2
+    @i
+    M=M+1   // increase counter
+    @LOOP
+    0;JMP   // Unconditional repeat
+(END)
+    @END
+    0;JMP

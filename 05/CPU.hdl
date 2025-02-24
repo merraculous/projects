@@ -39,5 +39,67 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    //DECODING
+    //determine A or C instruction
+    //  val - A instruction: set Aregister to 15 bit val
+    //  CompBit - C instruction: comparison bit compute jump and dest values from CompBit
+    Not(in=instruction[15], out=val);
+    Not(in=val, out=CompBit);
+
+    //if c inst determined, then ALU draw from A address
+    //else M (d1) And(a=Cinst, b=instruction[5], out=ALUtoA);
+    //And(a=CompBit, b=instruction[5], out=alua);//d1
+
+    //Select what gets loaded in AReg based on CompBit
+    Mux16(a=instruction, b=aluout, sel=CompBit, out=aregin);
+    
+    //EXECTUTION
+    //load for A Register (d1)
+    Or(a=val, b=instruction[5], out=loadA); //d1
+    ARegister(in=aregin, load=loadA, out=aregout, out[0..14]=addressM);
+
+    //Select whether to use A reg (aregout) or Memory[A] (inM)
+    Mux16(a=aregout, b=inM, sel=instruction[12], out=amout);
+
+    //load for D register (d2)
+    And(a=CompBit, b=instruction[4], out=loadD);//d2
+    DRegister(in=aluout, load=loadD, out=dreg);
+
+    //Calculate input values for ALU using CompBit in instruction
+    //zx - zero x output (c1)
+    And(a=instruction[11], b=CompBit, out=zx);
+    //zy - zero y output (c3)
+    Or(a=instruction[9], b=val, out=zy);
+    //nx - not x (c2)
+    And(a=instruction[10], b=CompBit, out=nx);
+    //ny - not y (c4)
+    Or(a=instruction[8], b=val, out=ny);
+    //f - function computed (c5)
+    And(a=instruction[7], b=CompBit, out=f);
+    //no - negate? (c6)
+    And(a=instruction[6], b=CompBit, out=no);
+    
+    ALU(x=dreg, y=amout, zx=zx, nx=nx, zy=zy, ny=ny, f=f, 
+        no=no, out=aluout, out=outM, zr=zr, ng=ng);
+
+    //determine whether write M happens based on CompBit and d3
+    And(a=CompBit, b=instruction[3], out=writeM);//d3
+
+    //FETCHING
+    //calculate jump bits
+    Or(a=zr, b=ng, out=negative);
+    Not(in=negative, out=positive);
+
+    And(a=instruction[0],b=positive,out=j3);//j3
+    And(a=instruction[1],b=zr,out=j2);//j2
+    And(a=instruction[2],b=ng,out=j1);//j1
+
+    //determine jump
+    Or(a=j1, b=j2, out=j12);
+    Or(a=j12, b=j3, out=jump);
+
+    //determine next instruction
+    And(a=CompBit, b=jump, out=load);
+
+    PC(in=aregout, load=load, inc=true, reset=reset, out[0..14]=pc);
 }
