@@ -46,10 +46,6 @@ CHIP CPU {
     Not(in=instruction[15], out=val);
     Not(in=val, out=CompBit);
 
-    //if c inst determined, then ALU draw from A address
-    //else M (d1) And(a=Cinst, b=instruction[5], out=ALUtoA);
-    //And(a=CompBit, b=instruction[5], out=alua);//d1
-
     //Select what gets loaded in AReg based on CompBit
     Mux16(a=instruction, b=aluout, sel=CompBit, out=aregin);
     

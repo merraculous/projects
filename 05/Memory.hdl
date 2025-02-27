@@ -20,6 +20,15 @@
  * map. Access to address 0x6000 results in accessing the keyboard 
  * memory map. The behavior in these addresses is described in the 
  * Screen and Keyboard chip specifications given in the book.
+ *
+ 
+ Selecting load for RAM, Screen and Keyboard from DMux():
+ 10: RAM load
+ 01: Screen and Keyboard loads
+    - as Keyboard() doesn't require load when called, its  actions are 
+        calculated in real time.
+    - So really, when DMux selects the Screen and Keyboard loads, it's really 
+        selecting the load to be used for Screen() 
  */
 
 CHIP Memory {
@@ -27,5 +36,12 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    DMux(in=load, sel=address[14], a=ramL, b=screenL);
+
+    RAM16K(in=in, load=ramL, address=address[0..13], out=ramout);
+    Screen(in=in, load=screenL, address=address[0..12], out=screenout);
+    Keyboard(out=kbdout);
+
+    Mux4Way16(a=ramout, b=ramout, c=screenout, d=kbdout, 
+        sel=address[13..14], out=out);
 }
